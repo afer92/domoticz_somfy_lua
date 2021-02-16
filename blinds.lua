@@ -205,6 +205,7 @@ return {
             if oldstate == 'Open' then
                 return
             end
+            local Time = require('Time')
             local now = Time() -- current time
             if now.hour < 9 then
                 dev.switchOff().at('09:00')
