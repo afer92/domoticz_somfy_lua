@@ -252,7 +252,7 @@ return {
                     domoticz.data.myTimers[timer.trigger] = now_mn
                     domoticz.log(string.format('--> %s: %s', name, timer.trigger))
                     device = domoticz.devices(name)
-                    device.stop()()
+                    device.stop()
                 end
             end
             -- Process close
