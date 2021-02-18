@@ -21,6 +21,7 @@ return {
         -- timer riggers
         timer = {
             -- timer triggers.. if one matches with the current time then the script is executed
+            '20 minutes before sunrise',
             '10 minutes before sunrise',
             '0 minutes after sunrise',
             '10 minutes after sunrise',
@@ -29,7 +30,8 @@ return {
             '0 minutes after sunset',
             '10 minutes after sunset',
             '30 minutes after sunset',
-            'every minute',
+            -- 'at 11:21',
+            -- 'every minute',
         }
     },
 
@@ -37,6 +39,7 @@ return {
     -- see documentation about persistent variables
     data = {
         myTimers = { initial = {
+            ['20 minutes before sunrise'] = 0,
             ['10 minutes before sunrise'] = 0,
             ['0 minutes after sunrise'] = 0,
             ['10 minutes after sunrise'] = 0,
@@ -79,29 +82,33 @@ return {
 
         volets = {
             ['Salon fenetre'] =
-                { ['open'] = {'10 minutes after sunrise'},
-                  ['stopped'] = {'10 minutes before sunrise'},
+                { ['stopped'] = {'20 minutes before sunrise'},
+                  ['shadow'] = {''},
+                  ['open'] = {'10 minutes before sunrise','at 09:00'},
                   ['close']= {'30 minutes after sunset'},
                   ['door']= false,
                   ['bedroom']= false
                  },
             ['Salon portefenetre'] =
-                { ['open'] = {'10 minutes after sunrise'},
-                  ['stopped'] = {'10 minutes before sunrise'},
+                { ['stopped'] = {'20 minutes before sunrise'},
+                  -- ['shadow'] = {'at 11:21'},
+                  ['open'] = {'10 minutes before sunrise','at 09:00'},
                   ['close']= {'30 minutes after sunset'},
                   ['door']= true,
                   ['bedroom']= false
                  },
             ['Chambre fenetre'] =
-                { ['open'] = {'90 minutes after sunrise'},
-                  ['stopped'] = {'60 minutes after sunrise'},
+                { ['stopped'] = {'60 minutes after sunrise'},
+                  ['shadow'] = {''},
+                  ['open'] = {'90 minutes after sunrise','at 10:00'},
                   ['close']= {'10 minutes after sunset'},
                   ['door']= false,
                   ['bedroom']= true
                  },
             ['Chambre portefenetre'] =
-                { ['open'] = {'90 minutes after sunrise'},
-                  ['stopped'] = {'60 minutes after sunrise'},
+                { ['stopped'] = {'60 minutes after sunrise'},
+                  ['shadow'] = {''},
+                  ['open'] = {'90 minutes after sunrise','at 10:00'},
                   ['close']= {'10 minutes after sunset'},
                   ['door']= true,
                   ['bedroom']= true
@@ -201,17 +208,37 @@ return {
         -----------safeOpen-------------
 
         function safeOpen(dev)
+            local Time = require('Time')
             oldstate = dev.state
             if oldstate == 'Open' then
                 return
             end
-            local Time = require('Time')
             local now = Time() -- current time
             if now.hour < 9 then
                 dev.switchOff().at('09:00')
                 return
             end
             dev.switchOff()
+        end
+
+        -----------shadow-------------
+
+        function shadow(dev, delay)
+            local Time = require('Time')
+            local now = Time() -- current time
+            if now.hour < 7 then
+                return
+            end
+            oldstate = dev.state
+            delay = delay or 10
+            if oldstate == 'Open' then
+                dev.switchOn()
+                dev.stop().afterSec(delay)
+                return
+            end
+            dev.switchOff()
+            dev.switchOn().afterSec(50)
+            dev.stop().afterSec(50 + delay)
         end
 
         --------------------------------
@@ -231,6 +258,11 @@ return {
         ----- Fin initialisations ------
         --------------------------------
    
+        -- device = domoticz.devices('Chambre fenetre')
+        -- safeOpen(device)
+        -- device = domoticz.devices('Salon fenetre')
+        -- shadow(device)
+        
 
         for name, triggers in pairs(volets) do
             -- Process open
@@ -253,6 +285,15 @@ return {
                     domoticz.log(string.format('--> %s: %s', name, timer.trigger))
                     device = domoticz.devices(name)
                     device.stop()
+                end
+            end
+            -- Process shadow
+            for i=1, #triggers.shadow do
+                if triggers.shadow[i] == timer.trigger then -- shadow
+                    domoticz.data.myTimers[timer.trigger] = now_mn
+                    domoticz.log(string.format('--> %s: %s', name, timer.trigger))
+                    device = domoticz.devices(name)
+                    shadow(device, 10)
                 end
             end
             -- Process close
