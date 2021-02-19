@@ -91,6 +91,7 @@ return {
                  },
             ['Salon portefenetre'] =
                 { ['stopped'] = {'20 minutes before sunrise'},
+                  ['shadow'] = {''},
                   -- ['shadow'] = {'at 11:21'},
                   ['open'] = {'10 minutes before sunrise','at 09:00'},
                   ['close']= {'30 minutes after sunset'},
